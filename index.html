@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Water Potability AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#111827',
+            secondary: '#7c3aed',
+            accent: '#0ea5e9',
+            success: '#10b981',
+            background: '#f9fafb',
+            navbar: '#ffffff',
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .fade-in { animation: fadeIn 1.5s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .hidden { display: none; }
+  </style>
+</head>
+
+<body class="bg-background text-primary min-h-screen flex flex-col">
+
+<nav class="flex items-center justify-between p-4 bg-navbar shadow-sm border-b border-gray-200">
+  <div class="flex items-center gap-3">
+    <h1 class="text-2xl font-bold tracking-wide text-primary">Water Potability</h1>
+  </div>
+  <div class="flex items-center gap-6 text-lg font-medium">
+    <button onclick="navigate('home')" class="hover:text-accent transition-transform transform hover:scale-105">Home</button>
+    <button onclick="navigate('predict')" class="hover:text-accent transition-transform transform hover:scale-105">Predict</button>
+    <button onclick="navigate('chat')" class="hover:text-accent transition-transform transform hover:scale-105">Chatbot</button>
+    <a href="https://public.tableau.com/app/profile/gouri.sirisha.kokkirala/viz/WaterPotability2/DashboardFinal" target="_blank"
+       class="hover:text-accent transition-transform transform hover:scale-105">
+       Tableau Dashboard
+    </a>
+  </div>
+</nav>
+
+<main class="flex-grow flex flex-col items-center justify-center p-6 fade-in">
+
+<section id="home-section" class="flex flex-col items-center gap-8 mt-20 text-center">
+  <h2 class="text-4xl font-extrabold text-primary">Welcome to Water Potability Predictor and Chatbot</h2>
+  <p class="text-gray-500 max-w-2xl text-lg">Predict water safety and interact with chatbot and explore real data dashboards</p>
+  <div class="flex flex-wrap justify-center gap-6">
+    <button onclick="navigate('predict')" class="bg-primary hover:bg-gray-900 text-white text-lg px-6 py-3 rounded-xl shadow-md transition-transform transform hover:scale-105">🔍 Predict Water Potability</button>
+    <button onclick="navigate('chat')" class="bg-secondary hover:bg-purple-700 text-white text-lg px-6 py-3 rounded-xl shadow-md transition-transform transform hover:scale-105">💬 Chatbot</button>
+    <a href="https://public.tableau.com/app/profile/gouri.sirisha.kokkirala/viz/WaterPotability2/DashboardFinal"
+       target="_blank"
+       class="bg-success hover:bg-green-700 text-white text-lg px-6 py-3 rounded-xl shadow-md transition-transform transform hover:scale-105">
+       📊 Tableau Dashboard
+    </a>
+  </div>
+</section>
+
+<section id="predict-section" class="hidden w-full max-w-3xl bg-white rounded-3xl shadow-lg p-8 mt-6">
+  <h2 class="text-2xl font-semibold text-primary mb-4">🔍 Water Quality Prediction</h2>
+  <textarea id="water-input" placeholder="e.g., ph is 7.2, hardness is 159, solids is 200..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none h-32 mb-4" oninput="clearPredictionResult()"></textarea>
+  <div class="flex gap-4">
+    <button onclick="predictWaterQuality()" class="w-full bg-primary hover:bg-gray-900 text-white py-2 rounded-lg transition-transform transform hover:scale-105">Predict</button>
+    <button onclick="resetPredictPage()" class="w-full bg-red-500 hover:bg-red-700 text-white py-2 rounded-lg transition-transform transform hover:scale-105">Reset</button>
+  </div>
+  <p id="prediction-result" class="text-center text-md font-semibold text-green-600 mt-4"></p>
+</section>
+
+<section id="chat-section" class="hidden w-full max-w-3xl bg-white rounded-3xl shadow-lg p-8 mt-6">
+  <h2 class="text-2xl font-semibold text-primary mb-4">💬 Chat with AI</h2>
+  <input id="chat-input-top" type="text" placeholder="Ask me anything about water..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary mb-4">
+  <div class="flex gap-4">
+    <button onclick="chatWithBot('chat-input-top', 'chat-response-container')" class="w-full bg-secondary hover:bg-purple-700 text-white py-2 rounded-lg transition-transform transform hover:scale-105">Send</button>
+    <button onclick="resetChatPage()" class="w-full bg-red-500 hover:bg-red-700 text-white py-2 rounded-lg transition-transform transform hover:scale-105">Reset</button>
+  </div>
+  <div id="chat-response-container" class="mt-4 flex flex-col gap-2"></div>
+</section>
+
+</main>
+
+<footer class="text-center py-6 text-gray-500 bg-navbar">
+  © 2025 Water Potability AI — All rights reserved.
+</footer>
+
+<script>
+function navigate(section) {
+  ['home-section', 'predict-section', 'chat-section'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  const target = document.getElementById(`${section}-section`);
+  if (target) target.classList.remove('hidden');
+}
+
+function extractValues(text) {
+  text = text.replace(/,/g, ' , ').replace(/\s+/g, ' ').toLowerCase();
+  const regex = /(ph|hardness|solids|chloramines|sulfate|sulphates|conductivity|organic carbon|trihalomethanes|turbidity)\s*(value)?\s*(is)?\s*([^\s,]+)/gi;
+  let extractedData = {
+    ph: 7.0, hardness: 150, solids: 20000, chloramines: 5,
+    sulfate: 300, conductivity: 500, organic_carbon: 10,
+    trihalomethanes: 60, turbidity: 3
+  };
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    let key = match[1].toLowerCase().replace(" ", "_");
+    if (key === "sulphates") key = "sulfate";
+    const rawValue = match[4];
+    if (!/^\d+(\.\d+)?$/.test(rawValue)) {
+        throw new Error(`❌ Invalid numeric value for '${key.replace("_", " ")}': "${rawValue}"`);
+    }
+    extractedData[key] = parseFloat(rawValue);
+  }
+  return extractedData;
+}
+
+async function predictWaterQuality() {
+  const userInput = document.getElementById("water-input").value;
+  const resultElement = document.getElementById("prediction-result");
+  if (!userInput.trim()) {
+    resultElement.innerText = "⚠️ Please enter input values.";
+    return;
+  }
+  let inputData;
+  try {
+    inputData = extractValues(userInput);
+  } catch (err) {
+    resultElement.innerText = err.message;
+    return;
+  }
+  try {
+    resultElement.innerHTML = "<span class='animate-pulse'>⏳ Predicting...</span>";
+    const response = await fetch("/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(inputData)
+    });
+    const result = await response.json();
+    if (result.potability) {
+      resultElement.innerText = `Potability: ${result.potability}`;
+    } else {
+      resultElement.innerText = "❌ Could not determine potability.";
+    }
+  } catch (error) {
+    console.error("Prediction error:", error);
+    resultElement.innerText = "❌ Prediction failed. Try again.";
+  }
+}
+
+function clearPredictionResult() {
+  document.getElementById("prediction-result").innerText = "";
+}
+
+function resetPredictPage() {
+  document.getElementById("water-input").value = "";
+  clearPredictionResult();
+}
+
+async function chatWithBot(inputId, containerId) {
+  const userMessage = document.getElementById(inputId).value;
+  const container = document.getElementById(containerId);
+  if (!userMessage.trim()) return;
+  const userBubble = `<div class='self-end bg-primary text-white py-2 px-4 rounded-2xl max-w-xs'>${userMessage}</div>`;
+  container.innerHTML += userBubble;
+  try {
+    const thinkingBubble = `<div id='thinking' class='self-start bg-gray-300 py-2 px-4 rounded-2xl max-w-xs animate-pulse'>💬 Thinking...</div>`;
+    container.innerHTML += thinkingBubble;
+    const response = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userMessage })
+    });
+    const result = await response.json();
+    document.getElementById('thinking').remove();
+    if (result.response) {
+      const aiBubble = `<div class='self-start bg-accent text-white py-2 px-4 rounded-2xl max-w-xs'>${result.response}</div>`;
+      container.innerHTML += aiBubble;
+    } else {
+      container.innerHTML += `<div class='self-start bg-red-400 text-white py-2 px-4 rounded-2xl max-w-xs'>❌ No response from chatbot.</div>`;
+    }
+  } catch (error) {
+    console.error("Chatbot error:", error);
+    document.getElementById('thinking').remove();
+    container.innerHTML += `<div class='self-start bg-red-400 text-white py-2 px-4 rounded-2xl max-w-xs'>❌ Chatbot failed to respond.</div>`;
+  }
+}
+
+function resetChatPage() {
+  document.getElementById("chat-input-top").value = "";
+  document.getElementById("chat-response-container").innerHTML = "";
+}
+</script>
+
+</body>
+</html>
